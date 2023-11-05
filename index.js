@@ -36,7 +36,7 @@ async function run() {
 
     // Reading Data
     app.get("/", (req, res) => {
-      res.send("Online Group Study");
+      res.send("Online Group Study Platform");
     });
 
     // Send a ping to confirm a successful connection
