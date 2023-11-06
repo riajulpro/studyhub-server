@@ -38,7 +38,7 @@ async function run() {
     app.get("/", (req, res) => {
       res.send("Online Group Study Platform");
     });
-
+    // GET: All the assignments
     app.get("/assignments", async (req, res) => {
       const cursor = allAssignments.find();
       const result = await cursor.toArray();
@@ -47,12 +47,27 @@ async function run() {
 
     // GET: Single Data according to id
     app.get("/assignment/:id", async (req, res) => {
-      const currentID = new ObjectId(req.params.id);
+      const query = { _id: new ObjectId(req.params.id) };
 
-      const query = { _id: currentID };
-      const cursor = allAssignments.find(query);
-      const result = await cursor.toArray();
+      const result = await allAssignments.find(query).toArray();
 
+      res.send(result);
+    });
+
+    // PUT: Updating a single data
+    app.put("/assignment/:id", async (req, res) => {
+      const filter = { _id: new ObjectId(req.params.id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: req.body,
+      };
+      const result = await allAssignments.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
+
+    // POST: Creating a new assignment
+    app.post("/assignment", async (req, res) => {
+      const result = await allAssignments.insertOne(req.body);
       res.send(result);
     });
 
