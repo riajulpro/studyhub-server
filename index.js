@@ -3,7 +3,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -42,6 +42,17 @@ async function run() {
     app.get("/assignments", async (req, res) => {
       const cursor = allAssignments.find();
       const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // GET: Single Data according to id
+    app.get("/assignment/:id", async (req, res) => {
+      const currentID = new ObjectId(req.params.id);
+
+      const query = { _id: currentID };
+      const cursor = allAssignments.find(query);
+      const result = await cursor.toArray();
+
       res.send(result);
     });
 
