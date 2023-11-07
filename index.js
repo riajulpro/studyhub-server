@@ -33,6 +33,9 @@ async function run() {
     const allAssignments = client
       .db("assignmentDB")
       .collection("allAssignments");
+    const submittedData = client
+      .db("assignmentDB")
+      .collection("submittedAssignment");
 
     // Reading Data
     app.get("/", (req, res) => {
@@ -40,7 +43,25 @@ async function run() {
     });
     // GET: All the assignments
     app.get("/assignments", async (req, res) => {
-      const cursor = allAssignments.find();
+      const page = parseInt(req.query.page);
+      const cursor = allAssignments
+        .find()
+        .skip(page * 10)
+        .limit(10);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // DELETE: Delete Specific Data
+    app.delete("/assignments/:id", async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const result = await allAssignments.deleteOne(query);
+      res.send(result);
+    });
+
+    // GET: All the submitted data
+    app.get("/submitted", async (req, res) => {
+      const cursor = submittedData.find();
       const result = await cursor.toArray();
       res.send(result);
     });
@@ -48,7 +69,6 @@ async function run() {
     // GET: Single Data according to id
     app.get("/assignment/:id", async (req, res) => {
       const query = { _id: new ObjectId(req.params.id) };
-
       const result = await allAssignments.find(query).toArray();
 
       res.send(result);
@@ -64,10 +84,32 @@ async function run() {
       const result = await allAssignments.updateOne(filter, updateDoc, options);
       res.send(result);
     });
+    // PUT: Updating submitted data
+    app.put("/submitted/:id", async (req, res) => {
+      const filter = { _id: new ObjectId(req.params.id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: req.body,
+      };
+      const result = await submittedData.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
 
     // POST: Creating a new assignment
     app.post("/assignment", async (req, res) => {
       const result = await allAssignments.insertOne(req.body);
+      res.send(result);
+    });
+
+    // Count
+    app.get("/documentCount", async (req, res) => {
+      const count = await allAssignments.estimatedDocumentCount();
+      res.send({ count });
+    });
+
+    // POST: Creating a submitted assignment data
+    app.post("/submitted", async (req, res) => {
+      const result = await submittedData.insertOne(req.body);
       res.send(result);
     });
 
