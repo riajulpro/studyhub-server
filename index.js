@@ -61,6 +61,7 @@ async function run() {
       if (!token) {
         return res.status(401).send({ status: "unAuthorized", code: "401" });
       }
+
       jwt.verify(token, process.env.SECRET, (error, decode) => {
         if (error) {
           res.status(401).send({ status: "unAuthorized", code: "401" });
@@ -68,6 +69,8 @@ async function run() {
           req.decode = decode;
         }
       });
+
+      next();
     };
 
     // Reading Data
@@ -99,7 +102,7 @@ async function run() {
       const result = await allAssignments.deleteOne(query);
       res.send(result);
     });
-    
+
     app.delete("/submitted/:id", async (req, res) => {
       const query = { _id: new ObjectId(req.params.id) };
       const result = await submittedData.deleteOne(query);
@@ -107,7 +110,8 @@ async function run() {
     });
 
     // GET: All the submitted data
-    app.get("/submitted", async (req, res) => {
+    app.get("/submitted", verify, async (req, res) => {
+      console.log(req.decode?.email);
       const cursor = submittedData.find();
       const result = await cursor.toArray();
       res.send(result);
