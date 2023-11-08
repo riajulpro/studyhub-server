@@ -99,9 +99,15 @@ async function run() {
       const result = await allAssignments.deleteOne(query);
       res.send(result);
     });
+    
+    app.delete("/submitted/:id", async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const result = await submittedData.deleteOne(query);
+      res.send(result);
+    });
 
     // GET: All the submitted data
-    app.get("/submitted", verify, async (req, res) => {
+    app.get("/submitted", async (req, res) => {
       const cursor = submittedData.find();
       const result = await cursor.toArray();
       res.send(result);
