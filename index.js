@@ -2,15 +2,22 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(bodyParser.json());
+app.use(cookieParser());
 
 // Code from MongoDB
 const uri = process.env.URI;
@@ -37,17 +44,51 @@ async function run() {
       .db("assignmentDB")
       .collection("submittedAssignment");
 
+    // JWT Token:
+    app.post("/jwt", async (req, res) => {
+      const payLoadData = req.body;
+      const token = jwt.sign(payLoadData, process.env.SECRET, {
+        expiresIn: "24h",
+      });
+      res
+        .cookie("token", token, { httpOnly: true })
+        .send({ msg: "Succeed", token });
+    });
+
+    // JWT Middleware
+    const verify = async (req, res, next) => {
+      const token = req.cookies?.token;
+      if (!token) {
+        return res.status(401).send({ status: "unAuthorized", code: "401" });
+      }
+      jwt.verify(token, process.env.SECRET, (error, decode) => {
+        if (error) {
+          res.status(401).send({ status: "unAuthorized", code: "401" });
+        } else {
+          req.decode = decode;
+        }
+      });
+    };
+
     // Reading Data
     app.get("/", (req, res) => {
       res.send("Online Group Study Platform");
     });
+
     // GET: All the assignments
     app.get("/assignments", async (req, res) => {
       const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
       const cursor = allAssignments
         .find()
-        .skip(page * 10)
-        .limit(10);
+        .skip(page * size)
+        .limit(size);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/filter", async (req, res) => {
+      const cursor = allAssignments.find();
       const result = await cursor.toArray();
       res.send(result);
     });
@@ -60,7 +101,7 @@ async function run() {
     });
 
     // GET: All the submitted data
-    app.get("/submitted", async (req, res) => {
+    app.get("/submitted", verify, async (req, res) => {
       const cursor = submittedData.find();
       const result = await cursor.toArray();
       res.send(result);
